@@ -6,7 +6,9 @@ import ClipsStep from "@/components/steps/ClipsStep";
 import RenderStep from "@/components/steps/RenderStep";
 import UploadStep from "@/components/steps/UploadStep";
 import TrackStep from "@/components/steps/TrackStep";
-import { Music } from "lucide-react";
+import { Music, Cloud, CloudOff } from "lucide-react";
+import { isApiConfigured } from "@/lib/api";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STEP_TITLES = ["Create Project", "Suno Audio", "Pexels Clips", "Render Video", "YouTube Upload", "Analytics"];
 
@@ -38,6 +40,23 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Studio Automator</p>
             </div>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
+                isApiConfigured()
+                  ? "bg-studio-success/10 text-studio-success border border-studio-success/20"
+                  : "bg-muted text-muted-foreground border border-border"
+              }`}>
+                {isApiConfigured() ? <Cloud className="h-3.5 w-3.5" /> : <CloudOff className="h-3.5 w-3.5" />}
+                {isApiConfigured() ? "API Connected" : "Mock Mode"}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isApiConfigured()
+                ? `Connected to ${import.meta.env.VITE_API_BASE_URL}`
+                : "Set VITE_API_BASE_URL to connect a backend"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </header>
 

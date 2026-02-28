@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Copy, Check } from "lucide-react";
+import { api, isApiConfigured } from "@/lib/api";
 
 const MOODS = ["Romantic", "Lofi", "Sad", "Dreamy", "Energetic"];
 const TEMPOS = ["Slow", "Medium"];
@@ -53,27 +54,51 @@ const CreateStep = ({ onComplete }: CreateStepProps) => {
 
   const handleGenerate = async () => {
     setGenerating(true);
-    // Simulate LLM generation
-    await new Promise((r) => setTimeout(r, 2000));
 
-    const data: ProjectData = {
-      title: `${mood} ${keywords[0] || "vibes"} — Jonit`,
-      mood,
-      tempo,
-      keywords,
-      aspectRatio,
-      lyrics: `[Verse 1]\nRaat ki baarish mein, tere khayalon ka mausam\nDil ke sheher mein, tu hai mera mehman\nHar lamha tujhse, har pal tujhse\nYe dil maange bas tera daaman\n\n[Chorus]\nTu meri dhun hai, tu meri lau\nJal rahi hai ye raat, tujhpe hai bharosa\nTu meri dhun hai, tu meri lau\nBas tere saath, har sapna hoga raushan\n\n[Verse 2]\nCity lights mein teri parchaaiyan\nTrain ki khidki se dikhe teri nishaaniyan\nMain likhta rahunga, ye gaane tere liye\nHar sur mein tera naam, har taal mein teri yaadein`,
-      sunoPrompt: `Hindi Indi-pop romantic song, slow tempo, male vocals by Jonit, ${mood.toLowerCase()} mood, dreamy synths, soft acoustic guitar, lo-fi beats, emotional, cinematic, ${keywords.join(", ")}`,
-      visualBrief: `Scene ideas: ${keywords.map(k => `cinematic ${k} shots`).join(", ")}. Use slow motion, warm color grading, soft bokeh lights. Transition style: gentle fades. Overall mood: ${mood.toLowerCase()}, intimate, nostalgic.`,
-      titleOptions: [
-        `${keywords[0] ? keywords[0].charAt(0).toUpperCase() + keywords[0].slice(1) : "Sapne"} | Jonit | Official Music Video`,
-        `Jonit - ${mood} Vibes (Official Video) | RubaaniMuzik`,
-        `Tere Khayalon Mein | Jonit | ${mood} Hindi Song 2026`,
-      ],
-      description: `🎵 ${mood} vibes by Jonit | RubaaniMuzik\n\nStream everywhere: [links]\n\n#RubaaniMuzik #Jonit #HindiSong #${mood} #IndiPop ${keywords.map(k => `#${k.replace(/\s/g, "")}`).join(" ")}`,
-    };
+    try {
+      if (isApiConfigured()) {
+        // Use real backend API
+        const result = await api.generate.content({ mood, tempo, keywords, aspectRatio });
+        const data: ProjectData = {
+          title: `${mood} ${keywords[0] || "vibes"} — Jonit`,
+          mood, tempo, keywords, aspectRatio,
+          ...result,
+        };
+        setProjectData(data);
+      } else {
+        // Mock fallback
+        await new Promise((r) => setTimeout(r, 2000));
+        const data: ProjectData = {
+          title: `${mood} ${keywords[0] || "vibes"} — Jonit`,
+          mood, tempo, keywords, aspectRatio,
+          lyrics: `[Verse 1]\nRaat ki baarish mein, tere khayalon ka mausam\nDil ke sheher mein, tu hai mera mehman\nHar lamha tujhse, har pal tujhse\nYe dil maange bas tera daaman\n\n[Chorus]\nTu meri dhun hai, tu meri lau\nJal rahi hai ye raat, tujhpe hai bharosa\nTu meri dhun hai, tu meri lau\nBas tere saath, har sapna hoga raushan\n\n[Verse 2]\nCity lights mein teri parchaaiyan\nTrain ki khidki se dikhe teri nishaaniyan\nMain likhta rahunga, ye gaane tere liye\nHar sur mein tera naam, har taal mein teri yaadein`,
+          sunoPrompt: `Hindi Indi-pop romantic song, slow tempo, male vocals by Jonit, ${mood.toLowerCase()} mood, dreamy synths, soft acoustic guitar, lo-fi beats, emotional, cinematic, ${keywords.join(", ")}`,
+          visualBrief: `Scene ideas: ${keywords.map(k => `cinematic ${k} shots`).join(", ")}. Use slow motion, warm color grading, soft bokeh lights. Transition style: gentle fades. Overall mood: ${mood.toLowerCase()}, intimate, nostalgic.`,
+          titleOptions: [
+            `${keywords[0] ? keywords[0].charAt(0).toUpperCase() + keywords[0].slice(1) : "Sapne"} | Jonit | Official Music Video`,
+            `Jonit - ${mood} Vibes (Official Video) | RubaaniMuzik`,
+            `Tere Khayalon Mein | Jonit | ${mood} Hindi Song 2026`,
+          ],
+          description: `🎵 ${mood} vibes by Jonit | RubaaniMuzik\n\nStream everywhere: [links]\n\n#RubaaniMuzik #Jonit #HindiSong #${mood} #IndiPop ${keywords.map(k => `#${k.replace(/\s/g, "")}`).join(" ")}`,
+        };
+        setProjectData(data);
+      }
+    } catch (err) {
+      console.error("Generate failed, using mock:", err);
+      // Fallback to mock on API error
+      await new Promise((r) => setTimeout(r, 1000));
+      const data: ProjectData = {
+        title: `${mood} ${keywords[0] || "vibes"} — Jonit`,
+        mood, tempo, keywords, aspectRatio,
+        lyrics: "[Verse 1]\nRaat ki baarish mein...\n[Chorus]\nTu meri dhun hai...",
+        sunoPrompt: `Hindi Indi-pop, ${mood.toLowerCase()}, Jonit, ${keywords.join(", ")}`,
+        visualBrief: `Cinematic ${keywords.join(", ")} scenes. ${mood} mood.`,
+        titleOptions: [`${mood} Vibes | Jonit | RubaaniMuzik`],
+        description: `🎵 ${mood} by Jonit #RubaaniMuzik`,
+      };
+      setProjectData(data);
+    }
 
-    setProjectData(data);
     setGenerated(true);
     setGenerating(false);
   };
