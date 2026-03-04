@@ -4,12 +4,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Wand2, Loader2, CheckCircle2, Heart, Moon, Train } from "lucide-react";
+import { Wand2, Loader2, CheckCircle2, Heart, Moon, Train, Download } from "lucide-react";
+import { isApiConfigured } from "@/lib/api";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface RenderStepProps {
+  projectId?: string;
   audioDuration?: number;
   clipCount?: number;
-  onComplete: () => void;
+  onComplete: (videoUrl?: string) => void;
 }
 
 const PRESETS = [
@@ -42,7 +46,7 @@ const PRESETS = [
   },
 ];
 
-const RenderStep = ({ audioDuration = 0, clipCount = 0, onComplete }: RenderStepProps) => {
+const RenderStep = ({ projectId, audioDuration = 0, clipCount = 0, onComplete }: RenderStepProps) => {
   const [preset, setPreset] = useState("soft-romance");
   const [overlays, setOverlays] = useState({
     watermark: true,
@@ -53,17 +57,63 @@ const RenderStep = ({ audioDuration = 0, clipCount = 0, onComplete }: RenderStep
   const [rendering, setRendering] = useState(false);
   const [progress, setProgress] = useState(0);
   const [renderDone, setRenderDone] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const handleRender = async () => {
     setRendering(true);
     setProgress(0);
-    // Simulate render progress
-    for (let i = 0; i <= 100; i += 2) {
-      await new Promise((r) => setTimeout(r, 80));
-      setProgress(i);
+
+    if (isApiConfigured() && projectId) {
+      try {
+        const job = await api.render.start(projectId, {
+          preset,
+          watermark: overlays.watermark,
+          titleIntro: overlays.titleIntro,
+          waveform: overlays.waveform,
+          filmGrain: overlays.filmGrain,
+        });
+
+        // Poll for progress
+        let current = job;
+        while (current.status === "queued" || current.status === "processing") {
+          await new Promise((r) => setTimeout(r, 2000));
+          current = await api.render.status(projectId, current.id);
+          setProgress(current.progress);
+        }
+
+        if (current.status === "completed" && current.outputUrl) {
+          setVideoUrl(current.outputUrl);
+          setRenderDone(true);
+          toast.success("Render complete!");
+        } else {
+          toast.error("Render failed: " + (current.error || "Unknown error"));
+        }
+      } catch (err: any) {
+        toast.error("Render failed: " + err.message);
+      } finally {
+        setRendering(false);
+      }
+    } else {
+      // Mock mode
+      for (let i = 0; i <= 100; i += 2) {
+        await new Promise((r) => setTimeout(r, 80));
+        setProgress(i);
+      }
+      setRendering(false);
+      setRenderDone(true);
+      setVideoUrl(null);
     }
-    setRendering(false);
-    setRenderDone(true);
+  };
+
+  const handleDownload = () => {
+    if (videoUrl) {
+      const a = document.createElement("a");
+      a.href = videoUrl;
+      a.download = "render.mp4";
+      a.click();
+    } else {
+      toast.info("Download unavailable in mock mode");
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -119,7 +169,7 @@ const RenderStep = ({ audioDuration = 0, clipCount = 0, onComplete }: RenderStep
       <div className="studio-card space-y-4">
         <Label className="text-sm font-medium text-foreground">Overlays & Effects</Label>
         {[
-          { key: "watermark" as const, label: "RubaaniMuzik watermark", desc: "Small text in corner" },
+          { key: "watermark" as const, label: "IxsuiMuzik watermark", desc: "Small text in corner" },
           { key: "titleIntro" as const, label: "Title intro card", desc: "Track title for 3 seconds" },
           { key: "waveform" as const, label: "Audio waveform", desc: "Animated bar at bottom" },
           { key: "filmGrain" as const, label: "Film grain", desc: "Subtle vintage texture" },
@@ -160,9 +210,15 @@ const RenderStep = ({ audioDuration = 0, clipCount = 0, onComplete }: RenderStep
               <p className="text-sm text-muted-foreground">Video ready at 1920×1080, H.264, 30fps</p>
             </div>
           </div>
-          <Button onClick={onComplete} className="w-full py-5 text-base font-semibold" size="lg">
-            Continue to Upload →
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={handleDownload} variant="outline" className="flex-1 py-5 text-base font-semibold" size="lg">
+              <Download className="mr-2 h-5 w-5" />
+              Download MP4
+            </Button>
+            <Button onClick={() => onComplete(videoUrl || undefined)} className="flex-1 py-5 text-base font-semibold" size="lg">
+              Continue to Upload →
+            </Button>
+          </div>
         </div>
       ) : (
         <Button
