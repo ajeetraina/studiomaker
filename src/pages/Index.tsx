@@ -36,7 +36,7 @@ const Index = () => {
               <Music className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold studio-gradient-text leading-tight">RubaaniMuzik</h1>
+              <h1 className="text-lg font-bold studio-gradient-text leading-tight">IxsuiMuzik</h1>
               <p className="text-xs text-muted-foreground">Studio Automator</p>
             </div>
           </div>
