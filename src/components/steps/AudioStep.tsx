@@ -61,10 +61,10 @@ const AudioStep = ({ lyrics, sunoPrompt, onComplete }: AudioStepProps) => {
             size="sm"
             className="ml-auto"
             onClick={() => {
-              const win = window.open("https://suno.com", "_blank", "noopener,noreferrer");
+              const win = window.open("https://suno.com/create", "_blank", "noopener,noreferrer");
               if (!win || win.closed || typeof win.closed === "undefined") {
                 // Popup blocked (common inside preview iframe) — fall back to top-level navigation
-                window.open("https://suno.com", "_top");
+                window.open("https://suno.com/create", "_top");
               }
             }}
           >
