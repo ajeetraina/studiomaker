@@ -56,16 +56,20 @@ const AudioStep = ({ lyrics, sunoPrompt, onComplete }: AudioStepProps) => {
             <h3 className="font-semibold text-foreground">Generate in Suno</h3>
             <p className="text-sm text-muted-foreground">Use persona "Jonit" on suno.com</p>
           </div>
-          <a
-            href="https://suno.com"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Button
+            variant="secondary"
+            size="sm"
             className="ml-auto"
+            onClick={() => {
+              const win = window.open("https://suno.com", "_blank", "noopener,noreferrer");
+              if (!win || win.closed || typeof win.closed === "undefined") {
+                // Popup blocked (common inside preview iframe) — fall back to top-level navigation
+                window.open("https://suno.com", "_top");
+              }
+            }}
           >
-            <Button variant="secondary" size="sm">
-              Open Suno <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-            </Button>
-          </a>
+            Open Suno <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+          </Button>
         </div>
 
         {/* Copy buttons */}
